@@ -1,0 +1,194 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include <ctype.h>
+
+// 이진 트리의 노드 구조체 정의
+typedef struct Node {
+    char data;
+    struct Node *left;
+    struct Node *right;
+} Node;
+
+// 입력 문자열에서 공백을 건너뛰는 함수
+void skip_whitespace(const char* s, int* pos) {
+    while (s[*pos] != '\0' && isspace(s[*pos])) {
+        (*pos)++;
+    }
+}
+
+// 재귀적으로 트리를 생성하는 함수
+Node* build_tree(const char* s, int* pos) {
+    skip_whitespace(s, pos);
+
+    if (s[*pos] == '\0' || s[*pos] == ')') {
+        return NULL;
+    }
+    
+    // 빈 괄호 ()는 노드가 없음을 의미
+    if (s[*pos] == '(' && s[*pos+1] == ')') {
+        *pos += 2; // "()" 건너뛰기
+        return NULL;
+    }
+
+    // 노드 생성 및 데이터 할당
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    if (!newNode) return NULL; // 메모리 할당 실패 시 처리
+
+    newNode->data = s[*pos];
+    newNode->left = NULL;
+    newNode->right = NULL;
+    (*pos)++;
+
+    skip_whitespace(s, pos);
+
+    // 자식 노드가 있는지 확인
+    if (s[*pos] == '(') {
+        (*pos)++; // '(' 건너뛰기
+
+        // 첫 번째 자식 (왼쪽 자식) 파싱 및 연결
+        Node* left_child = build_tree(s, pos);
+        if (left_child) {
+            newNode->left = left_child;
+        }
+
+        // 오른쪽 괄호와 공백을 건너뛰고 두 번째 자식 확인
+        skip_whitespace(s, pos);
+
+        // 두 번째 자식 (오른쪽 자식) 파싱 및 연결
+        Node* right_child = build_tree(s, pos);
+        if (right_child) {
+            newNode->right = right_child;
+        }
+
+        skip_whitespace(s, pos);
+        if (s[*pos] == ')') {
+            (*pos)++; // ')' 건너뛰기
+        }
+    }
+
+    return newNode;
+}
+
+// 재귀적으로 트리를 들여쓰기 형식으로 출력하는 함수
+void print_tree(Node* node, int indent_level) {
+    if (node == NULL) {
+        return;
+    }
+    
+    // 현재 노드 출력 (들여쓰기 적용)
+    for (int i = 0; i < indent_level; i++) {
+        printf("  ");
+    }
+    printf("%c\n", node->data);
+
+    // 왼쪽 자식과 오른쪽 자식 순서로 재귀 호출
+    print_tree(node->left, indent_level + 1);
+    print_tree(node->right, indent_level + 1);
+}
+
+// 메모리에 할당된 트리를 해제하는 함수
+void free_tree(Node* node) {
+    if (node == NULL) {
+        return;
+    }
+    free_tree(node->left);
+    free_tree(node->right);
+    free(node);
+}
+
+// 입력 문자열의 기본 형식을 검사하는 함수
+bool is_valid_format(const char* s) {
+    int paren_count = 0;
+    for (int i = 0; s[i] != '\0'; i++) {
+        if (s[i] == '(') {
+            paren_count++;
+        } else if (s[i] == ')') {
+            paren_count--;
+        } else if (!isalpha(s[i]) && !isspace(s[i])) {
+            // 알파벳, 괄호, 공백이 아닌 문자가 있으면 형식 오류
+            return false;
+        }
+        if (paren_count < 0) {
+            // 닫는 괄호가 먼저 나오면 형식 오류
+            return false;
+        }
+    }
+    // 괄호 짝이 맞지 않으면 형식 오류
+    return paren_count == 0;
+}
+
+// 트리가 이진 트리 규칙을 만족하는지 검사하는 함수
+bool is_valid_tree(Node* node) {
+    if (node == NULL) {
+        return true;
+    }
+    
+    // 각 노드의 자식 수를 계산
+    int child_count = 0;
+    if (node->left != NULL) {
+        child_count++;
+    }
+    if (node->right != NULL) {
+        child_count++;
+    }
+    
+    // 자식 수가 2개를 초과하면 false 반환
+    if (child_count > 2) {
+        return false;
+    }
+    
+    // 재귀적으로 자식 노드들도 검사
+    return is_valid_tree(node->left) && is_valid_tree(node->right);
+}
+
+int main() {
+    char* input_string = NULL;
+    size_t len = 0;
+    int pos = 0; // 전역 변수 대신 지역 변수로 변경
+    
+    printf("이진 트리 문자열을 입력하세요 (예: A (B C) 또는 A (B () C)):\n");
+    
+    if (getline(&input_string, &len, stdin) == -1) {
+        printf("입력 오류가 발생했습니다.\n");
+        return 1;
+    }
+    input_string[strcspn(input_string, "\n")] = 0;
+
+    printf("입력: \"%s\"\n", input_string);
+    
+    // 1단계: 기본 형식 검사 (괄호 짝, 유효하지 않은 문자 등)
+    if (!is_valid_format(input_string)) {
+        printf("결과: error\n");
+    } else {
+        // 2단계: 트리 구조를 만들고 이진 트리 규칙 검사
+        pos = 0;
+        Node* root = build_tree(input_string, &pos);
+
+        // 3단계: 논리적 오류 (이진 트리 규칙) 검사
+        bool is_binary_valid = is_valid_tree(root);
+
+        // 결과 출력
+        if (is_binary_valid) {
+            printf("결과: true\n");
+        } else {
+            printf("결과: false\n");
+        }
+
+        // 트리 구조 출력
+        printf("\n--- 트리 구조 ---\n");
+        if (root) {
+            print_tree(root, 0);
+        } else {
+            printf("트리 구조를 만들 수 없습니다.\n");
+        }
+        printf("-------------------\n");
+
+        free_tree(root);
+    }
+    
+    free(input_string); // getline으로 할당된 메모리 해제
+
+    return 0;
+}
