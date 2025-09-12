@@ -1,0 +1,127 @@
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+#define error 0
+#define true 1
+#define false 2
+
+
+void trim(char *buf) { //공백제거함수
+    if (buf == NULL) {
+        return;
+    }
+
+    char *src = buf;
+    char *dst = buf;
+
+    while (*src != '\0') {
+        if (!isspace((unsigned char)*src)) {
+            *dst = *src;
+            dst++;
+        }
+        src++;
+    }
+    *dst = '\0';
+}
+
+int check_paren(char *buf, int size) {
+    int balance = 0;
+    for (int i = 0; i < size; i++) {
+        if (buf[i] == '(') {
+            balance++;
+        } else if (buf[i] == ')') {
+            balance--;
+        }
+
+        if (balance < 0) {
+            return false;
+        }
+    }
+ 
+    return (balance == 0) ? true : false;
+}
+
+int check_root(char *buf, int size) { //루트 노드가 올바르게 실행되는가 확인
+    if (size == 0) {
+        return true; 
+    }
+    if (isalpha(buf[0])) {
+        return true;
+    }
+    return false;
+}
+
+int parse_recursive(char *buf, int *pos) {
+    if (!isalpha(buf[*pos])) {
+        return false;
+    }
+    (*pos)++; 
+
+    //자식 노드가 있는지 '(' 확인
+    if (buf[*pos] == '(') {
+        (*pos)++; // '('를 읽고 다음 위치로 이동
+        
+        int child_count = 0;
+        //현재위치가 노드일 동안 괄호 안의 자식을 순회
+        while (isalpha(buf[*pos])) {
+            child_count++;
+            if (child_count > 2) {
+                return false; // 자식이 3개 이상 = 이진트리x
+            }
+            if (parse_recursive(buf, pos) == false) {
+                return false;
+            }
+        }
+        
+        // 괄호가 ')'로 닫혔는지 확인
+        if (buf[*pos] != ')') {
+            return false;
+        }
+        (*pos)++; // ')'를 읽고 다음 위치로 이동
+    }
+    return true; // 유효함
+}
+
+int check_binary_tree(char *buf) {
+    int pos = 0;
+    int result = parse_recursive(buf, &pos);
+
+    // 파싱 실패 또는 파싱 후 뒤에 불필요한 문자가 남은 경우 실패
+    if (result == false || buf[pos] != '\0') {
+        return false;
+    }
+
+    return true;
+}
+
+int main(void) {
+    char buf[1000];
+    fgets(buf, sizeof(buf), stdin);
+
+    buf[strcspn(buf, "\n")] = 0;
+
+    //공백제거함수
+    trim(buf);
+
+    if (strlen(buf) == 0) {
+        printf("false\n");
+        return 0;
+    }
+
+    if (check_paren(buf, strlen(buf)) == false || check_root(buf, strlen(buf)) == false) {
+        printf("false\n");
+        return 0;
+    }
+    
+    int result = check_binary_tree(buf);
+
+    if (result == true) {
+        printf("true\n");
+    }
+    else{ // result == false
+        printf("false\n");
+    }
+
+    return 0;
+}
+
