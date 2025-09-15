@@ -59,6 +59,7 @@ int main(void) {
     int leaf_nodes = count_leaf_nodes(root);
 
     printf("%d,%d,%d\n", height, total_nodes, leaf_nodes);
+    //A (B (C D) E (G H (I J (K (L) M (N)))))을 입력했을 때 5,13,6출력
 
     free_tree(root);
 
