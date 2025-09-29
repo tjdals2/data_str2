@@ -18,7 +18,7 @@ typedef struct Stack {
 
 // 트리를 저장할 전역 배열과 노드 개수 카운터
 Node tree[MAX_NODES];
-int node_count = 0;
+int node_count = 1;
 
 
 void init_stack(Stack *s) { s->top = -1; }
